@@ -1,0 +1,3 @@
+package = cgltf
+headers = cgltf.h
+compilerOpts = -Ibuild/cgltf
