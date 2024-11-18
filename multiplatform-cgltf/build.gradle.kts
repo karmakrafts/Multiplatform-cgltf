@@ -18,6 +18,7 @@ import de.undercouch.gradle.tasks.download.Download
 import org.gradle.internal.extensions.stdlib.capitalized
 import org.jetbrains.kotlin.gradle.plugin.mpp.DefaultCInteropSettings
 import java.nio.file.Path
+import kotlin.io.path.createDirectories
 import kotlin.io.path.div
 import kotlin.io.path.exists
 import kotlin.io.path.notExists
@@ -39,9 +40,13 @@ java {
 
 operator fun DirectoryProperty.div(name: String): Path = get().asFile.toPath() / name
 
+fun DirectoryProperty.ensureExists(): Path = get().asFile.toPath().apply {
+    if(notExists()) createDirectories()
+}
+
 val downloadCgltfHeaders: Exec = tasks.create<Exec>("downloadCgltfHeaders") {
     group = "cgltfHeaders"
-    workingDir = layout.buildDirectory.get().asFile
+    workingDir = layout.buildDirectory.ensureExists().toFile()
     commandLine("git", "clone", "--branch", libs.versions.cgltf.get(), "--single-branch", "https://github.com/jkuhlmann/cgltf")
     onlyIf { (layout.buildDirectory / "cgltf").notExists() }
 }
@@ -49,7 +54,7 @@ val downloadCgltfHeaders: Exec = tasks.create<Exec>("downloadCgltfHeaders") {
 val updateCgltfHeaders: Exec = tasks.create<Exec>("updateCgltfHeaders") {
     group = "cgltfHeaders"
     dependsOn(downloadCgltfHeaders)
-    workingDir = (layout.buildDirectory / "cgltf").toFile()
+    workingDir = (layout.buildDirectory.ensureExists() / "cgltf").toFile()
     commandLine("git", "pull", "--force")
     onlyIf { (layout.buildDirectory / "cgltf").exists() }
 }
