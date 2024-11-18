@@ -14,9 +14,6 @@
  * limitations under the License.
  */
 
-import de.undercouch.gradle.tasks.download.Download
-import org.gradle.internal.extensions.stdlib.capitalized
-import org.jetbrains.kotlin.gradle.plugin.mpp.DefaultCInteropSettings
 import java.nio.file.Path
 import kotlin.io.path.createDirectories
 import kotlin.io.path.div
@@ -40,21 +37,19 @@ java {
 
 operator fun DirectoryProperty.div(name: String): Path = get().asFile.toPath() / name
 
-fun DirectoryProperty.ensureExists(): Path = get().asFile.toPath().apply {
-    if(notExists()) createDirectories()
-}
-
 val downloadCgltfHeaders: Exec = tasks.create<Exec>("downloadCgltfHeaders") {
     group = "cgltfHeaders"
-    workingDir = layout.buildDirectory.ensureExists().toFile()
-    commandLine("git", "clone", "--branch", libs.versions.cgltf.get(), "--single-branch", "https://github.com/jkuhlmann/cgltf")
+    workingDir = layout.buildDirectory.get().asFile
+    commandLine(
+        "git", "clone", "--branch", libs.versions.cgltf.get(), "--single-branch", "https://github.com/jkuhlmann/cgltf"
+    )
     onlyIf { (layout.buildDirectory / "cgltf").notExists() }
 }
 
 val updateCgltfHeaders: Exec = tasks.create<Exec>("updateCgltfHeaders") {
     group = "cgltfHeaders"
     dependsOn(downloadCgltfHeaders)
-    workingDir = (layout.buildDirectory.ensureExists() / "cgltf").toFile()
+    workingDir = (layout.buildDirectory / "cgltf").toFile()
     commandLine("git", "pull", "--force")
     onlyIf { (layout.buildDirectory / "cgltf").exists() }
 }
@@ -62,11 +57,14 @@ val updateCgltfHeaders: Exec = tasks.create<Exec>("updateCgltfHeaders") {
 kotlin {
     listOf(
         mingwX64(), linuxX64(), linuxArm64(), macosX64(), macosArm64()
-    ).forEach {
-        it.compilations.getByName("main") {
+    ).forEach { target ->
+        target.compilations.getByName("main") {
             cinterops {
                 val cgltf by creating {
                     tasks.getByName(interopProcessingTaskName) {
+                        layout.buildDirectory.asFile.get().toPath().let {
+                            if(it.notExists()) it.createDirectories()
+                        }
                         dependsOn(updateCgltfHeaders)
                     }
                 }
