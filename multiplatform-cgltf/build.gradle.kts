@@ -37,8 +37,15 @@ java {
 
 operator fun DirectoryProperty.div(name: String): Path = get().asFile.toPath() / name
 
+val ensureBuildDirectory: Task = tasks.create("ensureBuildDirectory") {
+    val path = layout.buildDirectory.get().asFile.toPath()
+    doLast { path.createDirectories() }
+    onlyIf { path.notExists() }
+}
+
 val downloadCgltfHeaders: Exec = tasks.create<Exec>("downloadCgltfHeaders") {
     group = "cgltfHeaders"
+    dependsOn(ensureBuildDirectory)
     workingDir = layout.buildDirectory.get().asFile
     commandLine(
         "git", "clone", "--branch", libs.versions.cgltf.get(), "--single-branch", "https://github.com/jkuhlmann/cgltf", "cgltf"
