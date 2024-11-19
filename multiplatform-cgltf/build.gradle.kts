@@ -41,7 +41,7 @@ val downloadCgltfHeaders: Exec = tasks.create<Exec>("downloadCgltfHeaders") {
     group = "cgltfHeaders"
     workingDir = layout.buildDirectory.get().asFile
     commandLine(
-        "git", "clone", "--branch", libs.versions.cgltf.get(), "--single-branch", "https://github.com/jkuhlmann/cgltf"
+        "git", "clone", "--branch", libs.versions.cgltf.get(), "--single-branch", "https://github.com/jkuhlmann/cgltf", "cgltf"
     )
     onlyIf { (layout.buildDirectory / "cgltf").notExists() }
 }
@@ -62,9 +62,6 @@ kotlin {
             cinterops {
                 val cgltf by creating {
                     tasks.getByName(interopProcessingTaskName) {
-                        layout.buildDirectory.asFile.get().toPath().let {
-                            if(it.notExists()) it.createDirectories()
-                        }
                         dependsOn(updateCgltfHeaders)
                     }
                 }
